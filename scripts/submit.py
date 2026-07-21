@@ -334,7 +334,7 @@ def main() -> int:
     parser.add_argument("--repo", default=os.environ.get("MODEL_CHECK_REPO", REPO))
     parser.add_argument("--branch", default=os.environ.get("MODEL_CHECK_BRANCH", "main"))
     parser.add_argument("--remote-user", default=os.environ.get("KFLOW_REMOTE_USER", "kyuhank"))
-    parser.add_argument("--remote-host", default=os.environ.get("KFLOW_REMOTE_HOST", "suvofpsubmit.corp.spc.int"))
+    parser.add_argument("--remote-host", default=os.environ.get("KFLOW_REMOTE_HOST", "nouofpsubmit.corp.spc.int"))
     parser.add_argument("--remote-base-dir", default=os.environ.get("KFLOW_REMOTE_BASE_DIR", "/home/kyuhank/KflowOutput"))
     parser.add_argument("--mfclshiny-ref", default=os.environ.get("MFCLSHINY_GITHUB_REF", MFCLSHINY_REF))
     parser.add_argument("--grad-reference", type=float, default=0.001)
