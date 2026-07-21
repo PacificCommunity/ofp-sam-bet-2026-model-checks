@@ -274,6 +274,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
     payload = {
         "repo": args.repo,
         "branch": args.branch,
+        "docker_image": "ghcr.io/pacificcommunity/tuna-flow:v2.5@sha256:c87f1f6d9d4f62dc447844b58afe35f96af175bf933cb6cffbbbe39a59172360",
         "remote_user": args.remote_user,
         "remote_host": args.remote_host,
         "remote_base_dir": args.remote_base_dir,
