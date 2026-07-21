@@ -75,31 +75,71 @@ def job_label(job: dict) -> str:
 
 
 def explicit_child_refs(job: dict) -> list[str]:
-    details = job.get("details") if isinstance(job.get("details"), dict) else {}
-    roots: list[Any] = []
-    for key in ("triggered_children", "child_jobs", "attached_work"):
-        value = details.get(key)
-        if value:
-            roots.append(value)
+    """Return job references from Kflow's supported relationship shapes."""
+    roots: list[tuple[str, Any]] = []
+    relationship_keys = (
+        "triggered_children",
+        "child_jobs",
+        "attached_work",
+        "attached_work_latest_by_slot",
+    )
+    for container_name in ("details", "metadata"):
+        container = job.get(container_name)
+        if not isinstance(container, dict):
+            continue
+        for key in relationship_keys:
+            value = container.get(key)
+            if value:
+                roots.append((key, value))
 
     refs: list[str] = []
     stack = list(roots)
+    direct_ref_keys = (
+        "output_job",
+        "current_output_job",
+        "job_number",
+        "job_id",
+        "job",
+        "job_ref",
+        "id",
+    )
+    ref_collection_keys = {
+        "triggered_children",
+        "child_jobs",
+        "children",
+        "jobs",
+        "output_jobs_by_slot",
+        "attached_work_latest_by_slot",
+    }
+
     while stack:
-        value = stack.pop()
+        context, value = stack.pop()
         if isinstance(value, list):
-            stack.extend(value)
+            for item in value:
+                if isinstance(item, (dict, list)):
+                    stack.append((context, item))
+                elif context in ref_collection_keys and str(item).strip():
+                    refs.append(str(item).strip().lstrip("#"))
             continue
         if not isinstance(value, dict):
+            if context in ref_collection_keys and str(value).strip():
+                refs.append(str(value).strip().lstrip("#"))
             continue
-        for key in ("id", "job_id", "job", "job_ref"):
+
+        for key in direct_ref_keys:
             ref = value.get(key)
             if isinstance(ref, (str, int)) and str(ref).strip():
                 refs.append(str(ref).strip().lstrip("#"))
                 break
-        for key in ("children", "child_jobs", "jobs", "steps", "items", "units"):
-            nested = value.get(key)
-            if isinstance(nested, (list, dict)):
-                stack.append(nested)
+        for key, nested in value.items():
+            if isinstance(nested, (dict, list)):
+                nested_context = key if key in ref_collection_keys else context
+                stack.append((nested_context, nested))
+            elif context in ref_collection_keys and key not in direct_ref_keys:
+                text = str(nested).strip().lstrip("#")
+                if text.isdigit() or re.fullmatch(r"j[0-9a-f]{8,}", text):
+                    refs.append(text)
+
     return list(dict.fromkeys(refs))
 
 
@@ -141,6 +181,27 @@ def descendants(api: KflowAPI, root: dict) -> tuple[dict[str, dict], dict[str, s
 
 
 def resolve_jitter_jobs(api: KflowAPI, model: dict) -> list[dict]:
+    metadata = model.get("metadata") if isinstance(model.get("metadata"), dict) else {}
+    latest_by_slot = metadata.get("attached_work_latest_by_slot")
+    latest_refs: list[str] = []
+    if isinstance(latest_by_slot, dict):
+        for slot, record in latest_by_slot.items():
+            if "jitter" not in str(slot).lower() or not isinstance(record, dict):
+                continue
+            ref = record.get("output_job") or record.get("job_number") or record.get("job")
+            if isinstance(ref, (str, int)) and str(ref).strip():
+                latest_refs.append(str(ref).strip().lstrip("#"))
+
+    if latest_refs:
+        latest_jobs = [api.job(ref) for ref in dict.fromkeys(latest_refs)]
+        completed_latest = [
+            job
+            for job in latest_jobs
+            if is_jitter_job(job) and str(job.get("status") or "").lower() in COMPLETED
+        ]
+        if completed_latest:
+            return sorted(completed_latest, key=lambda item: int(job_number(item)))
+
     children, edges = descendants(api, model)
     candidates = {
         job_id: job
