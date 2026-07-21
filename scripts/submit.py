@@ -271,7 +271,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
 
     input_refs = list(dict.fromkeys(ref for ref in input_refs if ref))
     model_numbers = ",".join(record["model_job"] for record in models)
-    job_name = f"bet-2026-jitter-model-{model_numbers.replace(',', '-')}"
+    job_name = f"bet-2026-jitter-models-{model_numbers.replace(',', '-')}"
     model_labels = " + ".join(
         f"{record['model_label'].removesuffix(' fitted model')} #{record['model_job']}"
         for record in models
@@ -316,7 +316,10 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "resolved_jitter_jobs": provenance,
             "job_name": job_name,
             "job_label": report_label,
-            "job_title": f"BET 2026 Model Checks - {report_label}",
+            "job_title": (
+                "BET 2026 Model Checks - Jitter | Model jobs #"
+                + ", #".join(record["model_job"] for record in models)
+            ),
             "job_description": "Report-ready mfclshiny Jitter figures and Word/LaTeX tables.",
         },
     }
@@ -350,25 +353,18 @@ def main() -> int:
     model_refs = [value.lstrip("#") for value in args.model_jobs if value.strip()]
     if not model_refs:
         raise RuntimeError("Provide at least one model job number.")
-    submissions: list[tuple[dict, list[dict]]] = []
-    for model_ref in model_refs:
-        payload, models = build_submission(api, [model_ref], args)
-        submissions.append((payload, models))
-        model = models[0]
+    payload, models = build_submission(api, model_refs, args)
+    for model in models:
         print(
             f"Model #{model['model_job']} ({model['model_label']}): "
             f"Jitter jobs {', '.join('#' + str(x) for x in model['jitter_jobs'])}"
         )
     if args.dry_run:
-        safe_payloads = []
-        for payload, _models in submissions:
-            safe_payload = dict(payload)
-            safe_payload["env"] = dict(payload["env"])
-            safe_payloads.append(safe_payload)
-        print(json.dumps(safe_payloads, indent=2, sort_keys=True))
+        safe_payload = dict(payload)
+        safe_payload["env"] = dict(payload["env"])
+        print(json.dumps(safe_payload, indent=2, sort_keys=True))
         return 0
 
-    registration_payload = submissions[0][0]
     api.request(
         "POST",
         f"/api/report/{TASK}",
@@ -381,14 +377,14 @@ def main() -> int:
             "repo": args.repo,
             "branch": args.branch,
             "make_target": "all",
-            "docker_image": registration_payload["docker_image"],
+            "docker_image": payload["docker_image"],
             "remote_user": args.remote_user,
             "remote_host": args.remote_host,
             "remote_base_dir": args.remote_base_dir,
-            "cpus": registration_payload["cpus"],
-            "memory": registration_payload["memory"],
-            "disk": registration_payload["disk"],
-            "output_patterns": registration_payload["output_patterns"],
+            "cpus": payload["cpus"],
+            "memory": payload["memory"],
+            "disk": payload["disk"],
+            "output_patterns": payload["output_patterns"],
             "tags": {
                 "species": "BET",
                 "assessment_year": "2026",
@@ -401,13 +397,12 @@ def main() -> int:
             },
         },
     )
-    for payload, _models in submissions:
-        response = api.request("POST", f"/api/job/{TASK}", payload)
-        job = response.get("job", response)
-        print(
-            f"Submitted {payload['batch_name']} as job "
-            f"#{job_number(job)} ({job.get('status')})."
-        )
+    response = api.request("POST", f"/api/job/{TASK}", payload)
+    job = response.get("job", response)
+    print(
+        f"Submitted {payload['batch_name']} as job "
+        f"#{job_number(job)} ({job.get('status')})."
+    )
     return 0
 
 
