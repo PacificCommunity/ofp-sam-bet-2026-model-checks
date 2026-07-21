@@ -1,6 +1,9 @@
 MODEL_JOBS ?= 8146 8096
 
-.PHONY: submit dry-run local
+.PHONY: all submit dry-run local
+
+all:
+	bash run.sh
 
 submit:
 	python3 scripts/submit.py $(MODEL_JOBS)

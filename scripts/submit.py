@@ -353,6 +353,38 @@ def main() -> int:
         print(json.dumps(safe_payload, indent=2, sort_keys=True))
         return 0
 
+    api.request(
+        "POST",
+        f"/api/report/{TASK}",
+        {
+            "name": "BET 2026 Model Checks",
+            "description": (
+                "Portable, report-ready BET 2026 model checks built with "
+                "mfclshiny, starting with Jitter reports."
+            ),
+            "repo": args.repo,
+            "branch": args.branch,
+            "make_target": "all",
+            "docker_image": payload["docker_image"],
+            "remote_user": args.remote_user,
+            "remote_host": args.remote_host,
+            "remote_base_dir": args.remote_base_dir,
+            "cpus": payload["cpus"],
+            "memory": payload["memory"],
+            "disk": payload["disk"],
+            "output_patterns": payload["output_patterns"],
+            "tags": {
+                "species": "BET",
+                "assessment_year": "2026",
+                "stage": "model-checks",
+            },
+            "metadata": {
+                "internal_task": False,
+                "task_visibility": "primary",
+                "task_role": "model-checks",
+            },
+        },
+    )
     response = api.request("POST", f"/api/job/{TASK}", payload)
     job = response.get("job", response)
     print(f"Submitted {TASK} job #{job_number(job)} ({job.get('status')}).")
