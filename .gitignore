@@ -1,0 +1,7 @@
+.Rhistory
+.Rproj.user/
+.R-library/
+inputs/
+jitter/
+work/
+*.tar.gz
