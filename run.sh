@@ -3,10 +3,10 @@ set -euo pipefail
 
 ROOT="$(pwd)"
 INPUT_DIR="${INPUT_DIR:-inputs}"
-OUTPUT_DIR="${OUTPUT_DIR:-jitter}"
+JITTER_OUTPUT_DIR="${JITTER_OUTPUT_DIR:-jitter}"
 R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
 
-mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${R_LIBRARY}"
+mkdir -p "${INPUT_DIR}" "${JITTER_OUTPUT_DIR}" "${R_LIBRARY}"
 export R_LIBS_USER="${R_LIBRARY}"
 
 Rscript - <<'RS'
@@ -61,4 +61,4 @@ if (!exists("build_jitter_report", envir = asNamespace("mfclshiny"), inherits = 
 }
 RS
 
-INPUT_DIR="${INPUT_DIR}" OUTPUT_DIR="${OUTPUT_DIR}" Rscript R/run_model_checks.R
+INPUT_DIR="${INPUT_DIR}" OUTPUT_DIR="${JITTER_OUTPUT_DIR}" Rscript R/run_model_checks.R
