@@ -34,35 +34,17 @@ if (is.null(provenance) || !nrow(provenance)) {
   stop("KFLOW_JOB_PROVENANCE must contain at least one model/Jitter pair.", call. = FALSE)
 }
 
-results <- lapply(seq_len(nrow(provenance)), function(index) {
-  model_provenance <- provenance[index, , drop = FALSE]
-  model_job <- as.character(model_provenance$model_job[[1L]])
-  model_label <- sub(
-    " fitted model$",
-    "",
-    as.character(model_provenance$model_label[[1L]]),
-    ignore.case = TRUE
-  )
-  model_output_dir <- file.path(output_dir, paste0("model-", model_job))
-
-  mfclshiny::build_jitter_report(
-    model_dir = input_dir,
-    output_dir = model_output_dir,
-    title = sprintf(
-      "BET 2026 Model Checks - Jitter | %s model job #%s",
-      model_label,
-      model_job
-    ),
-    provenance = model_provenance,
-    grad_reference = grad_reference,
-    rel_diff_threshold = rel_diff_threshold,
-    formats = c("png", "pdf"),
-    dpi = dpi,
-    render_html = TRUE
-  )
-})
-
-result <- results[[length(results)]]
+result <- mfclshiny::build_jitter_report(
+  model_dir = input_dir,
+  output_dir = output_dir,
+  title = env("MODEL_CHECK_TITLE", "BET 2026 Model Checks - Jitter"),
+  provenance = provenance,
+  grad_reference = grad_reference,
+  rel_diff_threshold = rel_diff_threshold,
+  formats = c("png", "pdf"),
+  dpi = dpi,
+  render_html = TRUE
+)
 
 message("Jitter report: ", result$html)
 message("Models: ", length(unique(result$data$scenario)))
