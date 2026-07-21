@@ -5,3 +5,5 @@ inputs/
 jitter/
 work/
 *.tar.gz
+__pycache__/
+*.pyc
