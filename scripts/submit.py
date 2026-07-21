@@ -276,7 +276,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         f"{record['model_label'].removesuffix(' fitted model')} #{record['model_job']}"
         for record in models
     )
-    job_label = f"Jitter | {model_labels}"
+    report_label = f"Jitter | {model_labels}"
     payload = {
         "repo": args.repo,
         "branch": args.branch,
@@ -293,7 +293,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         "env": {
             "MODEL_JOBS": model_numbers,
             "MODEL_CHECKS": "jitter",
-            "MODEL_CHECK_TITLE": f"BET 2026 Model Checks - {job_label}",
+            "MODEL_CHECK_TITLE": f"BET 2026 Model Checks - {report_label}",
             "KFLOW_JOB_PROVENANCE": json.dumps(provenance, separators=(",", ":")),
             "JITTER_GRAD_REFERENCE": str(args.grad_reference),
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
@@ -308,15 +308,15 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "stage": "model-checks",
             "check_type": "jitter",
             "model_jobs": model_numbers,
-            "job_label": job_label,
+            "job_label": report_label,
         },
         "metadata": {
             "input_jobs_override": True,
             "source_model_jobs": models,
             "resolved_jitter_jobs": provenance,
             "job_name": job_name,
-            "job_label": job_label,
-            "job_title": f"BET 2026 Model Checks - {job_label}",
+            "job_label": report_label,
+            "job_title": f"BET 2026 Model Checks - {report_label}",
             "job_description": "Report-ready mfclshiny Jitter figures and Word/LaTeX tables.",
         },
     }
