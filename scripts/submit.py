@@ -314,7 +314,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         "env": {
             "MODEL_JOBS": model_numbers,
             "MODEL_CHECKS": args.check,
-            "OUTPUT_DIR": config["output_dir"],
+            "MODEL_CHECK_OUTPUT_DIR": config["output_dir"],
             "MODEL_CHECK_TITLE": f"BET 2026 Model Checks - {report_label}",
             "KFLOW_JOB_PROVENANCE": json.dumps(provenance, separators=(",", ":")),
             "MODEL_CHECK_GRAD_REFERENCE": str(args.grad_reference),

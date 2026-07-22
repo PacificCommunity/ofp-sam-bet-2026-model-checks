@@ -4,12 +4,13 @@ set -euo pipefail
 ROOT="$(pwd)"
 INPUT_DIR="${INPUT_DIR:-inputs}"
 MODEL_CHECKS="${MODEL_CHECKS:-jitter}"
-if [[ -z "${OUTPUT_DIR:-}" ]]; then
-  if [[ "${MODEL_CHECKS}" == "retrospective" ]]; then OUTPUT_DIR="retrospective"; else OUTPUT_DIR="${JITTER_OUTPUT_DIR:-jitter}"; fi
+MODEL_CHECK_OUTPUT_DIR="${MODEL_CHECK_OUTPUT_DIR:-}"
+if [[ -z "${MODEL_CHECK_OUTPUT_DIR}" ]]; then
+  if [[ "${MODEL_CHECKS}" == "retrospective" ]]; then MODEL_CHECK_OUTPUT_DIR="retrospective"; else MODEL_CHECK_OUTPUT_DIR="${JITTER_OUTPUT_DIR:-jitter}"; fi
 fi
 R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
 
-mkdir -p "${INPUT_DIR}" "${OUTPUT_DIR}" "${R_LIBRARY}"
+mkdir -p "${INPUT_DIR}" "${MODEL_CHECK_OUTPUT_DIR}" "${R_LIBRARY}"
 export R_LIBS_USER="${R_LIBRARY}"
 
 Rscript - <<'RS'
@@ -70,4 +71,4 @@ if (!exists(required_api, envir = asNamespace("mfclshiny"), inherits = FALSE)) {
 }
 RS
 
-INPUT_DIR="${INPUT_DIR}" OUTPUT_DIR="${OUTPUT_DIR}" MODEL_CHECKS="${MODEL_CHECKS}" Rscript R/run_model_checks.R
+INPUT_DIR="${INPUT_DIR}" OUTPUT_DIR="${MODEL_CHECK_OUTPUT_DIR}" MODEL_CHECKS="${MODEL_CHECKS}" Rscript R/run_model_checks.R
