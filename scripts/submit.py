@@ -15,7 +15,7 @@ from typing import Any
 
 
 REPO = "PacificCommunity/ofp-sam-bet-2026-model-checks"
-MFCLSHINY_REF = "dc0d5d9a1b8ff27f7e1d4e52799f84efba45993a"
+MFCLSHINY_REF = "a1a48a13f225e2cdbb7380f5790242f071d901d4"
 COMPLETED = {"completed", "success"}
 COLLECTOR_WORDS = re.compile(r"merge|attach|collector|aggregate|combined", re.I)
 CHECKS = {
