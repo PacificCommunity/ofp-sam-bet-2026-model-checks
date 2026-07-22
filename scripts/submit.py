@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve dependent Jitter jobs and submit a BET 2026 model-check report."""
+"""Resolve dependent jobs and submit a BET 2026 model-check report."""
 
 from __future__ import annotations
 
@@ -14,11 +14,28 @@ from collections import deque
 from typing import Any
 
 
-TASK = "ofp-sam-bet-2026-model-checks"
 REPO = "PacificCommunity/ofp-sam-bet-2026-model-checks"
-MFCLSHINY_REF = "30ab8e2b92c26179a6a1ef7e9798fcb4559ddece"
+MFCLSHINY_REF = "9f460585a6f79bee1e599c7e07e77268e7863e3e"
 COMPLETED = {"completed", "success"}
 COLLECTOR_WORDS = re.compile(r"merge|attach|collector|aggregate|combined", re.I)
+CHECKS = {
+    "jitter": {
+        "title": "Jitter",
+        "dependency_word": "jitter",
+        "dependency_pattern": re.compile(r"(^|[^a-z])jitter([^a-z]|$)", re.I),
+        "output_dir": "jitter",
+        "task": "ofp-sam-bet-2026-model-checks",
+        "memory": "6GB",
+    },
+    "retrospective": {
+        "title": "Retrospective",
+        "dependency_word": "retro",
+        "dependency_pattern": re.compile(r"(^|[^a-z])retro(spective)?([^a-z]|$)", re.I),
+        "output_dir": "retrospective",
+        "task": "ofp-sam-bet-2026-model-checks-retrospective",
+        "memory": "4GB",
+    },
+}
 
 
 class KflowAPI:
@@ -155,9 +172,8 @@ def job_text(job: dict) -> str:
     return " ".join(pieces)
 
 
-def is_jitter_job(job: dict) -> bool:
-    text = job_text(job).lower()
-    return bool(re.search(r"(^|[^a-z])jitter([^a-z]|$)", text))
+def is_check_job(job: dict, check: str) -> bool:
+    return bool(CHECKS[check]["dependency_pattern"].search(job_text(job)))
 
 
 def descendants(api: KflowAPI, root: dict) -> tuple[dict[str, dict], dict[str, set[str]]]:
@@ -180,13 +196,14 @@ def descendants(api: KflowAPI, root: dict) -> tuple[dict[str, dict], dict[str, s
     return jobs, edges
 
 
-def resolve_jitter_jobs(api: KflowAPI, model: dict) -> list[dict]:
+def resolve_check_jobs(api: KflowAPI, model: dict, check: str) -> list[dict]:
+    config = CHECKS[check]
     metadata = model.get("metadata") if isinstance(model.get("metadata"), dict) else {}
     latest_by_slot = metadata.get("attached_work_latest_by_slot")
     latest_refs: list[str] = []
     if isinstance(latest_by_slot, dict):
         for slot, record in latest_by_slot.items():
-            if "jitter" not in str(slot).lower() or not isinstance(record, dict):
+            if config["dependency_word"] not in str(slot).lower() or not isinstance(record, dict):
                 continue
             ref = record.get("output_job") or record.get("job_number") or record.get("job")
             if isinstance(ref, (str, int)) and str(ref).strip():
@@ -197,7 +214,7 @@ def resolve_jitter_jobs(api: KflowAPI, model: dict) -> list[dict]:
         completed_latest = [
             job
             for job in latest_jobs
-            if is_jitter_job(job) and str(job.get("status") or "").lower() in COMPLETED
+            if is_check_job(job, check) and str(job.get("status") or "").lower() in COMPLETED
         ]
         if completed_latest:
             return sorted(completed_latest, key=lambda item: int(job_number(item)))
@@ -206,17 +223,17 @@ def resolve_jitter_jobs(api: KflowAPI, model: dict) -> list[dict]:
     candidates = {
         job_id: job
         for job_id, job in children.items()
-        if is_jitter_job(job) and str(job.get("status") or "").lower() in COMPLETED
+        if is_check_job(job, check) and str(job.get("status") or "").lower() in COMPLETED
     }
     if not candidates:
         number = job_number(model)
         observed = [
             f"#{job_number(job)}={job.get('status')}:{job.get('report_code')}"
             for job in children.values()
-            if is_jitter_job(job)
+            if is_check_job(job, check)
         ]
         raise RuntimeError(
-            f"Model job #{number} has no completed dependent Jitter job. "
+            f"Model job #{number} has no completed dependent {config['title']} job. "
             f"Observed: {', '.join(observed) or 'none'}"
         )
 
@@ -238,6 +255,7 @@ def resolve_jitter_jobs(api: KflowAPI, model: dict) -> list[dict]:
 
 
 def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namespace) -> tuple[dict, list[dict]]:
+    config = CHECKS[args.check]
     provenance: list[dict] = []
     input_refs: list[str] = []
     models: list[dict] = []
@@ -246,37 +264,40 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         status = str(model.get("status") or "").lower()
         if status not in COMPLETED:
             raise RuntimeError(f"Model job #{job_number(model)} is {status or 'unknown'}, not completed.")
-        jitter_jobs = resolve_jitter_jobs(api, model)
+        check_jobs = resolve_check_jobs(api, model, args.check)
         model_id = str(model.get("id") or "")
         input_refs.append(model_id or str(job_number(model)))
         model_record = {
             "model_job": str(job_number(model) or ref),
             "model_id": model_id,
             "model_label": job_label(model),
-            "jitter_jobs": [job_number(job) for job in jitter_jobs],
+            "check_jobs": [job_number(job) for job in check_jobs],
         }
         models.append(model_record)
-        for jitter in jitter_jobs:
-            jitter_id = str(jitter.get("id") or "")
-            input_refs.append(jitter_id or str(job_number(jitter)))
-            provenance.append(
-                {
-                    "model_job": model_record["model_job"],
-                    "model_id": model_id,
-                    "model_label": model_record["model_label"],
-                    "jitter_job": str(job_number(jitter) or ""),
-                    "jitter_id": jitter_id,
-                }
-            )
+        for check_job in check_jobs:
+            check_id = str(check_job.get("id") or "")
+            input_refs.append(check_id or str(job_number(check_job)))
+            record = {
+                "model_job": model_record["model_job"],
+                "model_id": model_id,
+                "model_label": model_record["model_label"],
+                "check_type": args.check,
+                "check_job": str(job_number(check_job) or ""),
+                "check_id": check_id,
+            }
+            prefix = "retro" if args.check == "retrospective" else args.check
+            record[f"{prefix}_job"] = record["check_job"]
+            record[f"{prefix}_id"] = check_id
+            provenance.append(record)
 
     input_refs = list(dict.fromkeys(ref for ref in input_refs if ref))
     model_numbers = ",".join(record["model_job"] for record in models)
-    job_name = f"bet-2026-jitter-models-{model_numbers.replace(',', '-')}"
+    job_name = f"bet-2026-{args.check}-models-{model_numbers.replace(',', '-')}"
     model_labels = " + ".join(
         f"{record['model_label'].removesuffix(' fitted model')} #{record['model_job']}"
         for record in models
     )
-    report_label = f"Jitter | {model_labels}"
+    report_label = f"{config['title']} | {model_labels}"
     payload = {
         "repo": args.repo,
         "branch": args.branch,
@@ -286,15 +307,18 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         "remote_host": args.remote_host,
         "remote_base_dir": args.remote_base_dir,
         "input_jobs": input_refs,
-        "output_patterns": ["jitter/**"],
+        "output_patterns": [f"{config['output_dir']}/**"],
         "cpus": 2,
-        "memory": "6GB",
+        "memory": config["memory"],
         "disk": "12GB",
         "env": {
             "MODEL_JOBS": model_numbers,
-            "MODEL_CHECKS": "jitter",
+            "MODEL_CHECKS": args.check,
+            "OUTPUT_DIR": config["output_dir"],
             "MODEL_CHECK_TITLE": f"BET 2026 Model Checks - {report_label}",
             "KFLOW_JOB_PROVENANCE": json.dumps(provenance, separators=(",", ":")),
+            "MODEL_CHECK_GRAD_REFERENCE": str(args.grad_reference),
+            "MODEL_CHECK_REPORT_DPI": str(args.dpi),
             "JITTER_GRAD_REFERENCE": str(args.grad_reference),
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
             "JITTER_REPORT_DPI": str(args.dpi),
@@ -306,29 +330,33 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "species": "BET",
             "assessment_year": "2026",
             "stage": "model-checks",
-            "check_type": "jitter",
+            "check_type": args.check,
             "model_jobs": model_numbers,
             "job_label": report_label,
         },
         "metadata": {
             "input_jobs_override": True,
             "source_model_jobs": models,
-            "resolved_jitter_jobs": provenance,
+            "resolved_check_jobs": provenance,
             "job_name": job_name,
             "job_label": report_label,
             "job_title": (
-                "BET 2026 Model Checks - Jitter | Model jobs #"
+                f"BET 2026 Model Checks - {config['title']} | Model jobs #"
                 + ", #".join(record["model_job"] for record in models)
             ),
-            "job_description": "Report-ready mfclshiny Jitter figures and Word/LaTeX tables.",
+            "job_description": f"Report-ready mfclshiny {config['title']} figures and Word/LaTeX tables.",
         },
     }
+    if args.check != "jitter":
+        for name in ("JITTER_GRAD_REFERENCE", "JITTER_REL_DIFF_THRESHOLD", "JITTER_REPORT_DPI"):
+            payload["env"].pop(name, None)
     return payload, models
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("model_jobs", nargs="*", default=["8146", "8096"])
+    parser.add_argument("--check", choices=tuple(CHECKS), default="jitter")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--api-url", default=os.environ.get("KFLOW_API_URL", "http://127.0.0.1:8089"))
     parser.add_argument("--repo", default=os.environ.get("MODEL_CHECK_REPO", REPO))
@@ -357,7 +385,7 @@ def main() -> int:
     for model in models:
         print(
             f"Model #{model['model_job']} ({model['model_label']}): "
-            f"Jitter jobs {', '.join('#' + str(x) for x in model['jitter_jobs'])}"
+            f"{CHECKS[args.check]['title']} jobs {', '.join('#' + str(x) for x in model['check_jobs'])}"
         )
     if args.dry_run:
         safe_payload = dict(payload)
@@ -367,12 +395,12 @@ def main() -> int:
 
     api.request(
         "POST",
-        f"/api/report/{TASK}",
+        f"/api/report/{CHECKS[args.check]['task']}",
         {
-            "name": "BET 2026 Model Checks - Jitter",
+            "name": f"BET 2026 Model Checks - {CHECKS[args.check]['title']}",
             "description": (
                 "Portable, report-ready BET 2026 model checks built with "
-                "mfclshiny, starting with Jitter reports."
+                f"mfclshiny for {CHECKS[args.check]['title']} reports."
             ),
             "repo": args.repo,
             "branch": args.branch,
@@ -397,7 +425,7 @@ def main() -> int:
             },
         },
     )
-    response = api.request("POST", f"/api/job/{TASK}", payload)
+    response = api.request("POST", f"/api/job/{CHECKS[args.check]['task']}", payload)
     job = response.get("job", response)
     print(
         f"Submitted {payload['batch_name']} as job "

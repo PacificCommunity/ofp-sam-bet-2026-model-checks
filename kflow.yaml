@@ -1,5 +1,5 @@
 name: ofp-sam-bet-2026-model-checks
-description: Build portable report-ready BET 2026 Jitter and future model-check outputs from selected model jobs.
+description: Build portable report-ready BET 2026 Jitter and Retrospective outputs from selected model jobs.
 command: bash run.sh
 docker_image: ghcr.io/pacificcommunity/tuna-flow:v2.5@sha256:c87f1f6d9d4f62dc447844b58afe35f96af175bf933cb6cffbbbe39a59172360
 
@@ -15,7 +15,9 @@ env:
   JITTER_GRAD_REFERENCE: "0.001"
   JITTER_REL_DIFF_THRESHOLD: "10"
   JITTER_REPORT_DPI: "300"
-  MFCLSHINY_GITHUB_REF: 30ab8e2b92c26179a6a1ef7e9798fcb4559ddece
+  MODEL_CHECK_GRAD_REFERENCE: "0.001"
+  MODEL_CHECK_REPORT_DPI: "300"
+  MFCLSHINY_GITHUB_REF: 9f460585a6f79bee1e599c7e07e77268e7863e3e
   KFLOW_RUNTIME_REQUIRE_PRIVATE_PACKAGES: "true"
   KFLOW_RUNTIME_UPDATE: auto
   KFLOW_RUNTIME_GITHUB_AUTH: "true"
@@ -23,6 +25,7 @@ env:
 
 output_patterns:
   - jitter/**
+  - retrospective/**
 
 triggers: {}
 
@@ -34,4 +37,6 @@ job_config:
     - JITTER_GRAD_REFERENCE
     - JITTER_REL_DIFF_THRESHOLD
     - JITTER_REPORT_DPI
+    - MODEL_CHECK_GRAD_REFERENCE
+    - MODEL_CHECK_REPORT_DPI
     - MFCLSHINY_GITHUB_REF
