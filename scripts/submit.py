@@ -15,7 +15,18 @@ from typing import Any
 
 
 REPO = "PacificCommunity/ofp-sam-bet-2026-model-checks"
-MFCLSHINY_REF = "5a07db44eb6c8fcbb84921c75a3adf365e7c562f"
+TUNA_FLOW_IMAGE = (
+    "ghcr.io/pacificcommunity/tuna-flow@"
+    "sha256:7b9dc95f535025a42109ac958c4faa3af96592cd19510ac0be15af4478eccf27"
+)
+FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
+MFCLKIT_REF = "9b949db539619be52a63b321bd138c937f868199"
+MFCLSHINY_REF = "2a4781bf03b7cfc52acd7bb23c3a6ae53af22a15"
+REPO_RUNTIME_PACKAGES = (
+    f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
+    f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
+    f"mfclshiny=PacificCommunity/mfclshiny@{MFCLSHINY_REF}"
+)
 COMPLETED = {"completed", "success"}
 COLLECTOR_WORDS = re.compile(r"merge|attach|collector|aggregate|combined", re.I)
 CHECKS = {
@@ -301,7 +312,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
     payload = {
         "repo": args.repo,
         "branch": args.branch,
-        "docker_image": "ghcr.io/pacificcommunity/tuna-flow:v2.5@sha256:c87f1f6d9d4f62dc447844b58afe35f96af175bf933cb6cffbbbe39a59172360",
+        "docker_image": TUNA_FLOW_IMAGE,
         "batch_name": job_name,
         "remote_user": args.remote_user,
         "remote_host": args.remote_host,
@@ -322,7 +333,15 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "JITTER_GRAD_REFERENCE": str(args.grad_reference),
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
             "JITTER_REPORT_DPI": str(args.dpi),
+            "FLR4MFCL_GITHUB_REF": FLR4MFCL_REF,
+            "MFCLKIT_GITHUB_REF": MFCLKIT_REF,
             "MFCLSHINY_GITHUB_REF": args.mfclshiny_ref,
+            "KFLOW_RUNTIME_PACKAGES": "none",
+            "KFLOW_REPO_RUNTIME_PACKAGES": REPO_RUNTIME_PACKAGES,
+            "KFLOW_REPO_RUNTIME_UPDATE": "always",
+            "KFLOW_RUNTIME_UPDATE": "always",
+            "TUNA_FLOW_RUNTIME_UPDATE": "always",
+            "KFLOW_RUNTIME_UPDATE_INTERVAL_HOURS": "0",
             "KFLOW_RUNTIME_GITHUB_AUTH": "true",
             "KFLOW_FORWARD_GITHUB_TOKEN_TO_RUNTIME": "true",
         },

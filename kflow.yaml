@@ -1,7 +1,7 @@
 name: ofp-sam-bet-2026-model-checks
 description: Build portable report-ready BET 2026 Jitter and Retrospective outputs from selected model jobs.
 command: bash run.sh
-docker_image: ghcr.io/pacificcommunity/tuna-flow:v2.5@sha256:c87f1f6d9d4f62dc447844b58afe35f96af175bf933cb6cffbbbe39a59172360
+docker_image: ghcr.io/pacificcommunity/tuna-flow@sha256:7b9dc95f535025a42109ac958c4faa3af96592cd19510ac0be15af4478eccf27
 
 resources:
   cpus: 2
@@ -18,9 +18,16 @@ env:
   JITTER_REPORT_DPI: "300"
   MODEL_CHECK_GRAD_REFERENCE: "0.001"
   MODEL_CHECK_REPORT_DPI: "300"
-  MFCLSHINY_GITHUB_REF: 5a07db44eb6c8fcbb84921c75a3adf365e7c562f
+  FLR4MFCL_GITHUB_REF: 3faaf84a4867175bfea50d89e4d518c085e84739
+  MFCLKIT_GITHUB_REF: 9b949db539619be52a63b321bd138c937f868199
+  MFCLSHINY_GITHUB_REF: 2a4781bf03b7cfc52acd7bb23c3a6ae53af22a15
+  KFLOW_RUNTIME_PACKAGES: none
+  KFLOW_REPO_RUNTIME_PACKAGES: FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@3faaf84a4867175bfea50d89e4d518c085e84739,mfclkit=PacificCommunity/ofp-sam-mfclkit@9b949db539619be52a63b321bd138c937f868199,mfclshiny=PacificCommunity/mfclshiny@2a4781bf03b7cfc52acd7bb23c3a6ae53af22a15
+  KFLOW_REPO_RUNTIME_UPDATE: always
   KFLOW_RUNTIME_REQUIRE_PRIVATE_PACKAGES: "true"
-  KFLOW_RUNTIME_UPDATE: auto
+  KFLOW_RUNTIME_UPDATE: always
+  TUNA_FLOW_RUNTIME_UPDATE: always
+  KFLOW_RUNTIME_UPDATE_INTERVAL_HOURS: "0"
   KFLOW_RUNTIME_GITHUB_AUTH: "true"
   KFLOW_FORWARD_GITHUB_TOKEN_TO_RUNTIME: "true"
 
@@ -41,4 +48,12 @@ job_config:
     - JITTER_REPORT_DPI
     - MODEL_CHECK_GRAD_REFERENCE
     - MODEL_CHECK_REPORT_DPI
+    - FLR4MFCL_GITHUB_REF
+    - MFCLKIT_GITHUB_REF
     - MFCLSHINY_GITHUB_REF
+    - KFLOW_RUNTIME_PACKAGES
+    - KFLOW_REPO_RUNTIME_PACKAGES
+    - KFLOW_REPO_RUNTIME_UPDATE
+    - KFLOW_RUNTIME_UPDATE
+    - TUNA_FLOW_RUNTIME_UPDATE
+    - KFLOW_RUNTIME_UPDATE_INTERVAL_HOURS
