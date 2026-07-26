@@ -13,6 +13,43 @@ R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
 mkdir -p "${INPUT_DIR}" "${MODEL_CHECK_OUTPUT_DIR}" "${R_LIBRARY}"
 export R_LIBS_USER="${R_LIBRARY}"
 
+first_runtime_token() {
+  local name
+  for name in GITHUB_PAT GIT_PAT GH_TOKEN GITHUB_TOKEN KFLOW_GITHUB_TOKEN KFLOW_PERSONAL_TOKEN; do
+    if [[ -n "${!name:-}" ]]; then
+      printf '%s' "${!name}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+RUNTIME_GIT_TOKEN="$(first_runtime_token || true)"
+RUNTIME_GIT_ASKPASS=""
+if [[ -n "${RUNTIME_GIT_TOKEN}" ]]; then
+  RUNTIME_GIT_ASKPASS="$(mktemp)"
+  cat > "${RUNTIME_GIT_ASKPASS}" <<'ASKPASS'
+#!/bin/sh
+case "$1" in
+  *Username*) printf '%s\n' x-access-token ;;
+  *) printf '%s\n' "$KFLOW_GIT_ASKPASS_TOKEN" ;;
+esac
+ASKPASS
+  chmod 700 "${RUNTIME_GIT_ASKPASS}"
+  trap 'rm -f "${RUNTIME_GIT_ASKPASS}"' EXIT
+fi
+
+runtime_git() {
+  if [[ -n "${RUNTIME_GIT_TOKEN}" ]]; then
+    GIT_ASKPASS="${RUNTIME_GIT_ASKPASS}" \
+      GIT_TERMINAL_PROMPT=0 \
+      KFLOW_GIT_ASKPASS_TOKEN="${RUNTIME_GIT_TOKEN}" \
+      git "$@"
+  else
+    GIT_TERMINAL_PROMPT=0 git "$@"
+  fi
+}
+
 install_runtime_repo() {
   local package="$1"
   local repo="$2"
@@ -22,10 +59,10 @@ install_runtime_repo() {
   rm -rf "${source_dir}"
   mkdir -p "$(dirname "${source_dir}")"
   echo "[model-checks] installing ${package} from ${repo}@${ref}"
-  GIT_TERMINAL_PROMPT=0 git clone --quiet --depth 50 "https://github.com/${repo}.git" "${source_dir}"
-  if ! git -C "${source_dir}" checkout --quiet "${ref}"; then
-    GIT_TERMINAL_PROMPT=0 git -C "${source_dir}" fetch --quiet --depth 1 origin "${ref}"
-    git -C "${source_dir}" checkout --quiet FETCH_HEAD
+  runtime_git clone --quiet --depth 50 "https://github.com/${repo}.git" "${source_dir}"
+  if ! runtime_git -C "${source_dir}" checkout --quiet "${ref}"; then
+    runtime_git -C "${source_dir}" fetch --quiet --depth 1 origin "${ref}"
+    runtime_git -C "${source_dir}" checkout --quiet FETCH_HEAD
   fi
   R CMD INSTALL -l "${R_LIBRARY}" "${source_dir}"
 }
