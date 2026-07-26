@@ -13,6 +13,39 @@ R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
 mkdir -p "${INPUT_DIR}" "${MODEL_CHECK_OUTPUT_DIR}" "${R_LIBRARY}"
 export R_LIBS_USER="${R_LIBRARY}"
 
+install_runtime_repo() {
+  local package="$1"
+  local repo="$2"
+  local ref="$3"
+  local source_dir="${ROOT}/.runtime-sources/${package}"
+
+  rm -rf "${source_dir}"
+  mkdir -p "$(dirname "${source_dir}")"
+  echo "[model-checks] installing ${package} from ${repo}@${ref}"
+  GIT_TERMINAL_PROMPT=0 git clone --quiet --depth 50 "https://github.com/${repo}.git" "${source_dir}"
+  if ! git -C "${source_dir}" checkout --quiet "${ref}"; then
+    GIT_TERMINAL_PROMPT=0 git -C "${source_dir}" fetch --quiet --depth 1 origin "${ref}"
+    git -C "${source_dir}" checkout --quiet FETCH_HEAD
+  fi
+  R CMD INSTALL -l "${R_LIBRARY}" "${source_dir}"
+}
+
+# R CMD INSTALL does not try to rediscover non-CRAN dependencies. Installing
+# the three repositories explicitly keeps the same tested dependency order as
+# the diagnostic merge workflow.
+install_runtime_repo \
+  FLR4MFCL \
+  PacificCommunity/ofp-sam-flr4mfcl \
+  "${FLR4MFCL_GITHUB_REF:-3faaf84a4867175bfea50d89e4d518c085e84739}"
+install_runtime_repo \
+  mfclkit \
+  PacificCommunity/ofp-sam-mfclkit \
+  "${MFCLKIT_GITHUB_REF:-9b949db539619be52a63b321bd138c937f868199}"
+install_runtime_repo \
+  mfclshiny \
+  PacificCommunity/mfclshiny \
+  "${MFCLSHINY_GITHUB_REF:-2a4781bf03b7cfc52acd7bb23c3a6ae53af22a15}"
+
 Rscript - <<'RS'
 lib <- Sys.getenv("R_LIBS_USER")
 dir.create(lib, recursive = TRUE, showWarnings = FALSE)
