@@ -35,7 +35,7 @@ CHECKS = {
         "dependency_word": "jitter",
         "dependency_pattern": re.compile(r"(^|[^a-z])jitter([^a-z]|$)", re.I),
         "output_dir": "jitter",
-        "task": "ofp-sam-bet-2026-model-checks",
+        "task": "ofp-sam-bet-2026-diagnostic-checks-jitter",
         "memory": "6GB",
     },
     "retrospective": {
@@ -43,7 +43,7 @@ CHECKS = {
         "dependency_word": "retro",
         "dependency_pattern": re.compile(r"(^|[^a-z])retro(spective)?([^a-z]|$)", re.I),
         "output_dir": "retrospective",
-        "task": "ofp-sam-bet-2026-model-checks-retrospective",
+        "task": "ofp-sam-bet-2026-diagnostic-checks-retrospective",
         "memory": "4GB",
     },
 }
@@ -423,7 +423,7 @@ def main() -> int:
         "POST",
         f"/api/report/{CHECKS[args.check]['task']}",
         {
-            "name": f"BET 2026 Model Checks - {CHECKS[args.check]['title']}",
+            "name": f"BET 2026 Diagnostic Checks - {CHECKS[args.check]['title']}",
             "description": (
                 "Portable, report-ready BET 2026 model checks built with "
                 f"mfclshiny for {CHECKS[args.check]['title']} reports."
