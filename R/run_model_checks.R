@@ -25,8 +25,10 @@ provenance <- if (nzchar(provenance_json)) {
 
 check <- checks[[1L]]
 if (!nzchar(output_dir)) output_dir <- if (identical(check, "retrospective")) "retrospective" else "jitter"
-grad_reference <- suppressWarnings(as.numeric(env("MODEL_CHECK_GRAD_REFERENCE", env("JITTER_GRAD_REFERENCE", "0.001"))))
-if (!is.finite(grad_reference) || grad_reference <= 0) grad_reference <- 0.001
+grad_reference <- suppressWarnings(as.numeric(env("MODEL_CHECK_GRAD_REFERENCE", env("JITTER_GRAD_REFERENCE", ""))))
+if (!length(grad_reference) || !is.finite(grad_reference) || grad_reference <= 0) {
+  grad_reference <- NULL
+}
 rel_diff_threshold <- suppressWarnings(as.numeric(env("JITTER_REL_DIFF_THRESHOLD", "10")))
 if (!is.finite(rel_diff_threshold) || rel_diff_threshold <= 0) rel_diff_threshold <- 10
 dpi <- suppressWarnings(as.integer(env("MODEL_CHECK_REPORT_DPI", env("JITTER_REPORT_DPI", "300"))))

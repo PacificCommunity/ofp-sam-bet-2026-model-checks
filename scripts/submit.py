@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "9b949db539619be52a63b321bd138c937f868199"
-MFCLSHINY_REF = "2a4781bf03b7cfc52acd7bb23c3a6ae53af22a15"
+MFCLSHINY_REF = "7d00c60c48bc0a6a10a7c10d81b033d6e9a8b491"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
     f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
@@ -328,9 +328,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "MODEL_CHECK_OUTPUT_DIR": config["output_dir"],
             "MODEL_CHECK_TITLE": f"BET 2026 Model Checks - {report_label}",
             "KFLOW_JOB_PROVENANCE": json.dumps(provenance, separators=(",", ":")),
-            "MODEL_CHECK_GRAD_REFERENCE": str(args.grad_reference),
             "MODEL_CHECK_REPORT_DPI": str(args.dpi),
-            "JITTER_GRAD_REFERENCE": str(args.grad_reference),
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
             "JITTER_REPORT_DPI": str(args.dpi),
             "FLR4MFCL_GITHUB_REF": FLR4MFCL_REF,
@@ -369,6 +367,10 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
     if args.check != "jitter":
         for name in ("JITTER_GRAD_REFERENCE", "JITTER_REL_DIFF_THRESHOLD", "JITTER_REPORT_DPI"):
             payload["env"].pop(name, None)
+    if args.grad_reference is not None:
+        payload["env"]["MODEL_CHECK_GRAD_REFERENCE"] = str(args.grad_reference)
+        if args.check == "jitter":
+            payload["env"]["JITTER_GRAD_REFERENCE"] = str(args.grad_reference)
     return payload, models
 
 
@@ -384,7 +386,12 @@ def main() -> int:
     parser.add_argument("--remote-host", default=os.environ.get("KFLOW_REMOTE_HOST", "nouofpsubmit.corp.spc.int"))
     parser.add_argument("--remote-base-dir", default=os.environ.get("KFLOW_REMOTE_BASE_DIR", "/home/kyuhank/KflowOutput"))
     parser.add_argument("--mfclshiny-ref", default=os.environ.get("MFCLSHINY_GITHUB_REF", MFCLSHINY_REF))
-    parser.add_argument("--grad-reference", type=float, default=0.001)
+    parser.add_argument(
+        "--grad-reference",
+        type=float,
+        default=None,
+        help="Optional diagnostic MGC cutoff; omitted means use recorded run convergence.",
+    )
     parser.add_argument("--rel-diff-threshold", type=float, default=10.0)
     parser.add_argument("--dpi", type=int, default=300)
     args = parser.parse_args()
