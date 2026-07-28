@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "9b949db539619be52a63b321bd138c937f868199"
-MFCLSHINY_REF = "a42b33f977e5bb0bb228c7dcf53fbda8d264e777"
+MFCLSHINY_REF = "500d22b26ea770b4a7c6d5d62e024a3819b96d14"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
     f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
@@ -45,6 +45,14 @@ CHECKS = {
         "output_dir": "retrospective",
         "task": "ofp-sam-bet-2026-diagnostic-checks-retrospective",
         "memory": "4GB",
+    },
+    "selftest": {
+        "title": "Self-Test",
+        "dependency_word": "selftest",
+        "dependency_pattern": re.compile(r"(^|[^a-z])self[-_ ]?test([^a-z]|$)", re.I),
+        "output_dir": "selftest",
+        "task": "ofp-sam-bet-2026-diagnostic-checks-selftest",
+        "memory": "8GB",
     },
 }
 

@@ -6,7 +6,11 @@ INPUT_DIR="${INPUT_DIR:-inputs}"
 MODEL_CHECKS="${MODEL_CHECKS:-jitter}"
 MODEL_CHECK_OUTPUT_DIR="${MODEL_CHECK_OUTPUT_DIR:-}"
 if [[ -z "${MODEL_CHECK_OUTPUT_DIR}" ]]; then
-  if [[ "${MODEL_CHECKS}" == "retrospective" ]]; then MODEL_CHECK_OUTPUT_DIR="retrospective"; else MODEL_CHECK_OUTPUT_DIR="${JITTER_OUTPUT_DIR:-jitter}"; fi
+  case "${MODEL_CHECKS}" in
+    retrospective) MODEL_CHECK_OUTPUT_DIR="retrospective" ;;
+    selftest) MODEL_CHECK_OUTPUT_DIR="selftest" ;;
+    *) MODEL_CHECK_OUTPUT_DIR="${JITTER_OUTPUT_DIR:-jitter}" ;;
+  esac
 fi
 R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
 
@@ -81,7 +85,7 @@ install_runtime_repo \
 install_runtime_repo \
   mfclshiny \
   PacificCommunity/mfclshiny \
-  "${MFCLSHINY_GITHUB_REF:-a42b33f977e5bb0bb228c7dcf53fbda8d264e777}"
+  "${MFCLSHINY_GITHUB_REF:-500d22b26ea770b4a7c6d5d62e024a3819b96d14}"
 
 Rscript - <<'RS'
 lib <- Sys.getenv("R_LIBS_USER")
@@ -91,7 +95,7 @@ dir.create(lib, recursive = TRUE, showWarnings = FALSE)
 required_ref <- Sys.getenv("MFCLSHINY_GITHUB_REF", "main")
 source_dir <- Sys.getenv("MFCLSHINY_SOURCE_DIR", "")
 has_api <- requireNamespace("mfclshiny", quietly = TRUE) &&
-  all(vapply(c("build_jitter_report", "build_retrospective_report"), exists, logical(1), envir = asNamespace("mfclshiny"), inherits = FALSE))
+  all(vapply(c("build_jitter_report", "build_retrospective_report", "build_selftest_report"), exists, logical(1), envir = asNamespace("mfclshiny"), inherits = FALSE))
 
 if (nzchar(source_dir) && dir.exists(source_dir)) {
   if (isNamespaceLoaded("mfclshiny")) unloadNamespace("mfclshiny")
@@ -104,7 +108,7 @@ if (nzchar(source_dir) && dir.exists(source_dir)) {
   status <- attr(output, "status")
   if (!is.null(status) && status != 0L) stop(paste(output, collapse = "\n"), call. = FALSE)
   has_api <- requireNamespace("mfclshiny", quietly = TRUE) &&
-    all(vapply(c("build_jitter_report", "build_retrospective_report"), exists, logical(1), envir = asNamespace("mfclshiny"), inherits = FALSE))
+    all(vapply(c("build_jitter_report", "build_retrospective_report", "build_selftest_report"), exists, logical(1), envir = asNamespace("mfclshiny"), inherits = FALSE))
 }
 
 if (!has_api) {
@@ -132,10 +136,15 @@ if (!has_api) {
     quiet = TRUE
   )
   has_api <- requireNamespace("mfclshiny", quietly = TRUE) &&
-    all(vapply(c("build_jitter_report", "build_retrospective_report"), exists, logical(1), envir = asNamespace("mfclshiny"), inherits = FALSE))
+    all(vapply(c("build_jitter_report", "build_retrospective_report", "build_selftest_report"), exists, logical(1), envir = asNamespace("mfclshiny"), inherits = FALSE))
 }
 
-required_api <- if (identical(Sys.getenv("MODEL_CHECKS", "jitter"), "retrospective")) "build_retrospective_report" else "build_jitter_report"
+required_api <- switch(
+  Sys.getenv("MODEL_CHECKS", "jitter"),
+  retrospective = "build_retrospective_report",
+  selftest = "build_selftest_report",
+  "build_jitter_report"
+)
 if (!exists(required_api, envir = asNamespace("mfclshiny"), inherits = FALSE)) {
   stop("Installed mfclshiny does not provide ", required_api, "().", call. = FALSE)
 }

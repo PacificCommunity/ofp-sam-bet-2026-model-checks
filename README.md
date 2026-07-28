@@ -5,8 +5,8 @@ portable, report-ready model-check bundles. It resolves the relevant completed
 dependent jobs and delegates plotting, tables, and self-contained HTML reports
 to `mfclshiny`.
 
-Implemented checks are Jitter and Retrospective. The same task structure can be
-extended to profile, self-test, and Hessian reports.
+Implemented checks are Jitter, Retrospective, and Self-Test. The same task
+structure can be extended to profile and Hessian reports.
 
 ## Submit
 
@@ -17,6 +17,7 @@ before submission with `--dry-run`.
 export KFLOW_API_TOKEN=...
 python3 scripts/submit.py --check jitter --dry-run 8146 8096
 python3 scripts/submit.py --check retrospective --dry-run 8146 8096
+python3 scripts/submit.py --check selftest --dry-run 16594
 ```
 
 Submit the retrospective report to the public Kflow task named
@@ -24,6 +25,7 @@ Submit the retrospective report to the public Kflow task named
 
 ```bash
 python3 scripts/submit.py --check retrospective 8146 8096
+python3 scripts/submit.py --check selftest 16594
 ```
 
 The resolver selects each model's latest completed terminal `retro-merge` job.
@@ -42,6 +44,19 @@ Each run writes a compact `retrospective/` folder containing:
 
 The HTML uses the same publication PNG files stored in `figures/` and includes
 copy controls for Word figures, captions, methods, results, tables, and LaTeX.
+
+## Self-test output
+
+Each self-test report resolves the model's latest promoted and completed
+`selftest` merge, then writes a compact `selftest/` folder containing:
+
+- `selftest-report.html`: self-contained diagnostic review.
+- derived-quantity recovery bands against operating-model truth.
+- recent-period and key-parameter recovery-bias figures.
+- pseudo-data generation checks for CPUE, length, age-at-length, and
+  conditional post-mixing tag recaptures.
+- LaTeX tables for replicate convergence, recovery summaries, and the tag
+  simulation contract.
 
 ## Standalone use
 

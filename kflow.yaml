@@ -1,5 +1,5 @@
 name: ofp-sam-bet-2026-model-checks
-description: Build portable report-ready BET 2026 Jitter and Retrospective outputs from selected model jobs.
+description: Build portable report-ready BET 2026 Jitter, Retrospective, and Self-Test outputs from selected model jobs.
 command: bash run.sh
 docker_image: ghcr.io/pacificcommunity/tuna-flow@sha256:7b9dc95f535025a42109ac958c4faa3af96592cd19510ac0be15af4478eccf27
 
@@ -18,9 +18,9 @@ env:
   MODEL_CHECK_REPORT_DPI: "300"
   FLR4MFCL_GITHUB_REF: 3faaf84a4867175bfea50d89e4d518c085e84739
   MFCLKIT_GITHUB_REF: 9b949db539619be52a63b321bd138c937f868199
-  MFCLSHINY_GITHUB_REF: a42b33f977e5bb0bb228c7dcf53fbda8d264e777
+  MFCLSHINY_GITHUB_REF: 500d22b26ea770b4a7c6d5d62e024a3819b96d14
   KFLOW_RUNTIME_PACKAGES: none
-  KFLOW_REPO_RUNTIME_PACKAGES: FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@3faaf84a4867175bfea50d89e4d518c085e84739,mfclkit=PacificCommunity/ofp-sam-mfclkit@9b949db539619be52a63b321bd138c937f868199,mfclshiny=PacificCommunity/mfclshiny@a42b33f977e5bb0bb228c7dcf53fbda8d264e777
+  KFLOW_REPO_RUNTIME_PACKAGES: FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@3faaf84a4867175bfea50d89e4d518c085e84739,mfclkit=PacificCommunity/ofp-sam-mfclkit@9b949db539619be52a63b321bd138c937f868199,mfclshiny=PacificCommunity/mfclshiny@500d22b26ea770b4a7c6d5d62e024a3819b96d14
   KFLOW_REPO_RUNTIME_UPDATE: always
   KFLOW_RUNTIME_REQUIRE_PRIVATE_PACKAGES: "true"
   KFLOW_RUNTIME_UPDATE: always
@@ -32,6 +32,7 @@ env:
 output_patterns:
   - jitter/**
   - retrospective/**
+  - selftest/**
 
 triggers: {}
 
