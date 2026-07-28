@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "9b949db539619be52a63b321bd138c937f868199"
-MFCLSHINY_REF = "500d22b26ea770b4a7c6d5d62e024a3819b96d14"
+MFCLSHINY_REF = "ac30842428038a37a57b607c1c8d3cd03c31578a"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
     f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
@@ -317,6 +317,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         for record in models
     )
     report_label = f"{config['title']} | {model_labels}"
+    report_title = args.title or f"BET 2026 Diagnostic Checks - {config['title']}"
     payload = {
         "repo": args.repo,
         "branch": args.branch,
@@ -334,7 +335,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "MODEL_JOBS": model_numbers,
             "MODEL_CHECKS": args.check,
             "MODEL_CHECK_OUTPUT_DIR": config["output_dir"],
-            "MODEL_CHECK_TITLE": f"BET 2026 Model Checks - {report_label}",
+            "MODEL_CHECK_TITLE": report_title,
             "KFLOW_JOB_PROVENANCE": json.dumps(provenance, separators=(",", ":")),
             "MODEL_CHECK_REPORT_DPI": str(args.dpi),
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
@@ -390,6 +391,7 @@ def main() -> int:
     parser.add_argument("--api-url", default=os.environ.get("KFLOW_API_URL", "http://127.0.0.1:8089"))
     parser.add_argument("--repo", default=os.environ.get("MODEL_CHECK_REPO", REPO))
     parser.add_argument("--branch", default=os.environ.get("MODEL_CHECK_BRANCH", "main"))
+    parser.add_argument("--title", default="")
     parser.add_argument("--remote-user", default=os.environ.get("KFLOW_REMOTE_USER", "kyuhank"))
     parser.add_argument("--remote-host", default=os.environ.get("KFLOW_REMOTE_HOST", "nouofpsubmit.corp.spc.int"))
     parser.add_argument("--remote-base-dir", default=os.environ.get("KFLOW_REMOTE_BASE_DIR", "/home/kyuhank/KflowOutput"))
