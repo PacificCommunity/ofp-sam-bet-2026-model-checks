@@ -85,7 +85,7 @@ install_runtime_repo \
 install_runtime_repo \
   mfclshiny \
   PacificCommunity/mfclshiny \
-  "${MFCLSHINY_GITHUB_REF:-c7711f30068bef3ba62d98851508a7b3d76e74d7}"
+  "${MFCLSHINY_GITHUB_REF:-7a04b34c678711019342bd420d5b1585121d110f}"
 
 Rscript - <<'RS'
 lib <- Sys.getenv("R_LIBS_USER")
