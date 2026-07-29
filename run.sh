@@ -81,7 +81,7 @@ install_runtime_repo \
 install_runtime_repo \
   mfclkit \
   PacificCommunity/ofp-sam-mfclkit \
-  "${MFCLKIT_GITHUB_REF:-9b949db539619be52a63b321bd138c937f868199}"
+  "${MFCLKIT_GITHUB_REF:-8e0aea6ee934b4ffa59a87e5a6192c3b2f564c4f}"
 install_runtime_repo \
   mfclshiny \
   PacificCommunity/mfclshiny \
