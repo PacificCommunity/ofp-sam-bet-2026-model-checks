@@ -16,11 +16,11 @@ from typing import Any
 
 REPO = "PacificCommunity/ofp-sam-bet-2026-model-checks"
 TUNA_FLOW_IMAGE = (
-    "ghcr.io/pacificcommunity/tuna-flow@"
-    "sha256:7b9dc95f535025a42109ac958c4faa3af96592cd19510ac0be15af4478eccf27"
+    "ghcr.io/pacificcommunity/tuna-flow:v2.5@"
+    "sha256:c87f1f6d9d4f62dc447844b58afe35f96af175bf933cb6cffbbbe39a59172360"
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
-MFCLKIT_REF = "8e0aea6ee934b4ffa59a87e5a6192c3b2f564c4f"
+MFCLKIT_REF = "34c56de25afecdd13e9f8e94f2e421e37d9c2f9b"
 MFCLSHINY_REF = "1fc0bb6bf4cf5349da6f6def54cc56c5a60e182a"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
