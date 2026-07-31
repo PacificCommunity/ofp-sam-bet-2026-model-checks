@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "34c56de25afecdd13e9f8e94f2e421e37d9c2f9b"
-MFCLSHINY_REF = "1fc0bb6bf4cf5349da6f6def54cc56c5a60e182a"
+MFCLSHINY_REF = "15f703717c23c869087f3d82eac55e9d90269f07"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
     f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
