@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "34c56de25afecdd13e9f8e94f2e421e37d9c2f9b"
-MFCLSHINY_REF = "18daa35b38661dd273041ddae00e89fc4c657b86"
+MFCLSHINY_REF = "6b96e53f28a9ee098ab1dbfcdfec727e9d062f42"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
     f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
@@ -419,6 +419,12 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
             "JITTER_REPORT_DPI": str(args.dpi),
             "JITTER_REGIONAL_DIAGNOSTICS": "true" if args.regional_jitter else "false",
+            "JITTER_TRAJECTORY_STYLE": args.trajectory_style,
+            "JITTER_REFERENCE_LABEL": args.reference_label,
+            "JITTER_BASE_LABEL": args.base_label,
+            "JITTER_REFERENCE_COLOUR": args.reference_colour,
+            "JITTER_BASE_COLOUR": args.base_colour,
+            "JITTER_SHOW_OBJECTIVE_REFERENCE_LINE": "false" if args.hide_objective_reference_line else "true",
             "FLR4MFCL_GITHUB_REF": FLR4MFCL_REF,
             "MFCLKIT_GITHUB_REF": MFCLKIT_REF,
             "MFCLSHINY_GITHUB_REF": args.mfclshiny_ref,
@@ -481,6 +487,21 @@ def main() -> int:
         "--regional-jitter",
         action="store_true",
         help="Include recoverable leaf jitter jobs and build regional depletion/recruitment diagnostics.",
+    )
+    parser.add_argument(
+        "--trajectory-style",
+        choices=("distribution", "individual"),
+        default="distribution",
+        help="Show pointwise distribution bands or all included jitter trajectories.",
+    )
+    parser.add_argument("--reference-label", default="Reference model")
+    parser.add_argument("--base-label", default="Attached base fit")
+    parser.add_argument("--reference-colour", default="#C62828")
+    parser.add_argument("--base-colour", default="#111827")
+    parser.add_argument(
+        "--hide-objective-reference-line",
+        action="store_true",
+        help="Omit the horizontal reference-objective line.",
     )
     parser.add_argument("--remote-user", default=os.environ.get("KFLOW_REMOTE_USER", "kyuhank"))
     parser.add_argument("--remote-host", default=os.environ.get("KFLOW_REMOTE_HOST", "nouofpsubmit.corp.spc.int"))

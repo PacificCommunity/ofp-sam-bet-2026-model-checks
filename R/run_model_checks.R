@@ -52,12 +52,19 @@ if (is.null(provenance) || !nrow(provenance)) {
 
 if (identical(check, "jitter")) {
   regional_jitter <- env_flag("JITTER_REGIONAL_DIAGNOSTICS", FALSE)
+  trajectory_style <- env("JITTER_TRAJECTORY_STYLE", "distribution")
   result <- mfclshiny::build_jitter_report(
     model_dir = input_dir,
     output_dir = output_dir,
     title = env("MODEL_CHECK_TITLE", "BET 2026 Model Checks - Jitter"),
     provenance = provenance,
     regional = regional_jitter,
+    trajectory_style = trajectory_style,
+    reference_label = env("JITTER_REFERENCE_LABEL", "Reference model"),
+    base_label = env("JITTER_BASE_LABEL", "Attached base fit"),
+    reference_colour = env("JITTER_REFERENCE_COLOUR", "#C62828"),
+    base_colour = env("JITTER_BASE_COLOUR", "#111827"),
+    show_objective_reference_line = env_flag("JITTER_SHOW_OBJECTIVE_REFERENCE_LINE", TRUE),
     grad_reference = grad_reference,
     rel_diff_threshold = rel_diff_threshold,
     formats = c("png", "pdf"),
@@ -67,6 +74,7 @@ if (identical(check, "jitter")) {
   message("Jitter report: ", result$html)
   message("Models: ", length(unique(result$data$scenario)))
   message("Jitter seeds: ", nrow(result$data))
+  message("Jitter trajectory style: ", trajectory_style)
   if (regional_jitter) {
     message("Regional jitter values: ", nrow(result$regional_data))
   }
