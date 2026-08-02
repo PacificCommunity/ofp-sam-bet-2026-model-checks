@@ -3,6 +3,11 @@ env <- function(name, default = "") {
   if (nzchar(value)) value else default
 }
 
+env_flag <- function(name, default = FALSE) {
+  value <- tolower(trimws(env(name, if (isTRUE(default)) "true" else "false")))
+  value %in% c("1", "true", "yes", "on")
+}
+
 input_dir <- env("INPUT_DIR", "inputs")
 output_dir <- env("OUTPUT_DIR", "")
 checks <- trimws(strsplit(tolower(env("MODEL_CHECKS", "jitter")), "[,[:space:]]+", perl = TRUE)[[1L]])
@@ -46,11 +51,13 @@ if (is.null(provenance) || !nrow(provenance)) {
 }
 
 if (identical(check, "jitter")) {
+  regional_jitter <- env_flag("JITTER_REGIONAL_DIAGNOSTICS", FALSE)
   result <- mfclshiny::build_jitter_report(
     model_dir = input_dir,
     output_dir = output_dir,
     title = env("MODEL_CHECK_TITLE", "BET 2026 Model Checks - Jitter"),
     provenance = provenance,
+    regional = regional_jitter,
     grad_reference = grad_reference,
     rel_diff_threshold = rel_diff_threshold,
     formats = c("png", "pdf"),
@@ -60,6 +67,9 @@ if (identical(check, "jitter")) {
   message("Jitter report: ", result$html)
   message("Models: ", length(unique(result$data$scenario)))
   message("Jitter seeds: ", nrow(result$data))
+  if (regional_jitter) {
+    message("Regional jitter values: ", nrow(result$regional_data))
+  }
 } else if (identical(check, "retrospective")) {
   result <- mfclshiny::build_retrospective_report(
     model_dir = input_dir,

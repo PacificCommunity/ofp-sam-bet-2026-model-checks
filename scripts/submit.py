@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "34c56de25afecdd13e9f8e94f2e421e37d9c2f9b"
-MFCLSHINY_REF = "ff0dfcc0534c743713601dbadca5d9d56c0a4025"
+MFCLSHINY_REF = "18daa35b38661dd273041ddae00e89fc4c657b86"
 REPO_RUNTIME_PACKAGES = (
     f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
     f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
@@ -108,6 +108,52 @@ def job_label(job: dict) -> str:
             return value
     number = job_number(job)
     return f"Model job {number}" if number is not None else str(job.get("report_code") or "Model")
+
+
+def metadata_input_refs(job: dict) -> list[str]:
+    metadata = job.get("metadata") if isinstance(job.get("metadata"), dict) else {}
+    values = metadata.get("input_jobs")
+    if not isinstance(values, list):
+        return []
+    return list(
+        dict.fromkeys(
+            str(value).strip().lstrip("#")
+            for value in values
+            if isinstance(value, (str, int)) and str(value).strip()
+        )
+    )
+
+
+def resolve_regional_jitter_units(api: KflowAPI, check_jobs: list[dict]) -> list[dict]:
+    """Find completed leaf jitter jobs carrying the recoverable seed payloads."""
+    queue: deque[str] = deque()
+    for check_job in check_jobs:
+        queue.extend(metadata_input_refs(check_job))
+    seen: set[str] = set()
+    units: dict[str, dict] = {}
+    while queue:
+        ref = queue.popleft()
+        if ref in seen:
+            continue
+        seen.add(ref)
+        job = api.job(ref)
+        nested = metadata_input_refs(job)
+        queue.extend(nested)
+        identity = " ".join(
+            (str(job.get("report_code") or ""), str(job.get("batch_name") or ""))
+        )
+        status = str(job.get("status") or "").lower()
+        if (
+            status in COMPLETED
+            and re.search(r"(^|[^a-z])jitter([^a-z]|$)", identity, re.I)
+            and not COLLECTOR_WORDS.search(identity)
+        ):
+            key = str(job.get("id") or job_number(job) or ref)
+            units[key] = job
+    return sorted(
+        units.values(),
+        key=lambda item: (job_number(item) is None, job_number(item) or 0),
+    )
 
 
 def explicit_child_refs(job: dict) -> list[str]:
@@ -278,7 +324,10 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
     provenance: list[dict] = []
     input_refs: list[str] = []
     models: list[dict] = []
-    for ref in model_refs:
+    label_overrides = list(args.model_label or [])
+    if len(label_overrides) not in (0, 1, len(model_refs)):
+        raise RuntimeError("Provide --model-label once for all models or once per model job.")
+    for model_index, ref in enumerate(model_refs):
         model = api.job(ref)
         status = str(model.get("status") or "").lower()
         if status not in COMPLETED:
@@ -286,10 +335,15 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
         check_jobs = resolve_check_jobs(api, model, args.check)
         model_id = str(model.get("id") or "")
         input_refs.append(model_id or str(job_number(model)))
+        override = ""
+        if len(label_overrides) == 1:
+            override = label_overrides[0].strip()
+        elif len(label_overrides) == len(model_refs):
+            override = label_overrides[model_index].strip()
         model_record = {
             "model_job": str(job_number(model) or ref),
             "model_id": model_id,
-            "model_label": job_label(model),
+            "model_label": override or job_label(model),
             "check_jobs": [job_number(job) for job in check_jobs],
         }
         models.append(model_record)
@@ -308,6 +362,30 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             record[f"{prefix}_job"] = record["check_job"]
             record[f"{prefix}_id"] = check_id
             provenance.append(record)
+        if args.check == "jitter" and args.regional_jitter:
+            unit_jobs = resolve_regional_jitter_units(api, check_jobs)
+            if not unit_jobs:
+                raise RuntimeError(
+                    f"Model job #{model_record['model_job']} has no completed recoverable jitter unit jobs."
+                )
+            model_record["regional_jitter_unit_jobs"] = [job_number(job) for job in unit_jobs]
+            for unit_job in unit_jobs:
+                unit_id = str(unit_job.get("id") or "")
+                unit_number = str(job_number(unit_job) or "")
+                input_refs.append(unit_id or unit_number)
+                provenance.append(
+                    {
+                        "model_job": model_record["model_job"],
+                        "model_id": model_id,
+                        "model_label": model_record["model_label"],
+                        "check_type": "jitter",
+                        "check_job": unit_number,
+                        "check_id": unit_id,
+                        "jitter_job": unit_number,
+                        "jitter_id": unit_id,
+                        "regional_recovery_source": True,
+                    }
+                )
 
     input_refs = list(dict.fromkeys(ref for ref in input_refs if ref))
     model_numbers = ",".join(record["model_job"] for record in models)
@@ -340,6 +418,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "MODEL_CHECK_REPORT_DPI": str(args.dpi),
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
             "JITTER_REPORT_DPI": str(args.dpi),
+            "JITTER_REGIONAL_DIAGNOSTICS": "true" if args.regional_jitter else "false",
             "FLR4MFCL_GITHUB_REF": FLR4MFCL_REF,
             "MFCLKIT_GITHUB_REF": MFCLKIT_REF,
             "MFCLSHINY_GITHUB_REF": args.mfclshiny_ref,
@@ -367,7 +446,7 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "job_name": job_name,
             "job_label": report_label,
             "job_title": (
-                f"BET 2026 Model Checks - {config['title']} | Model jobs #"
+                f"{report_title} | Model jobs #"
                 + ", #".join(record["model_job"] for record in models)
             ),
             "job_description": f"Report-ready mfclshiny {config['title']} figures and Word/LaTeX tables.",
@@ -392,6 +471,17 @@ def main() -> int:
     parser.add_argument("--repo", default=os.environ.get("MODEL_CHECK_REPO", REPO))
     parser.add_argument("--branch", default=os.environ.get("MODEL_CHECK_BRANCH", "main"))
     parser.add_argument("--title", default="")
+    parser.add_argument(
+        "--model-label",
+        action="append",
+        default=[],
+        help="Display label override; provide once for all models or once per model job.",
+    )
+    parser.add_argument(
+        "--regional-jitter",
+        action="store_true",
+        help="Include recoverable leaf jitter jobs and build regional depletion/recruitment diagnostics.",
+    )
     parser.add_argument("--remote-user", default=os.environ.get("KFLOW_REMOTE_USER", "kyuhank"))
     parser.add_argument("--remote-host", default=os.environ.get("KFLOW_REMOTE_HOST", "nouofpsubmit.corp.spc.int"))
     parser.add_argument("--remote-base-dir", default=os.environ.get("KFLOW_REMOTE_BASE_DIR", "/home/kyuhank/KflowOutput"))
