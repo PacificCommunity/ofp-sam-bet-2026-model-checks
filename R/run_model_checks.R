@@ -52,6 +52,16 @@ if (is.null(provenance) || !nrow(provenance)) {
 
 if (identical(check, "jitter")) {
   regional_jitter <- env_flag("JITTER_REGIONAL_DIAGNOSTICS", FALSE)
+  regional_quantities <- trimws(strsplit(
+    tolower(env("JITTER_REGIONAL_QUANTITIES", "depletion")),
+    "[,[:space:]]+",
+    perl = TRUE
+  )[[1L]])
+  regional_quantities <- intersect(
+    regional_quantities[nzchar(regional_quantities)],
+    c("depletion", "recruitment")
+  )
+  if (!length(regional_quantities)) regional_quantities <- "depletion"
   trajectory_style <- env("JITTER_TRAJECTORY_STYLE", "distribution")
   result <- mfclshiny::build_jitter_report(
     model_dir = input_dir,
@@ -59,6 +69,7 @@ if (identical(check, "jitter")) {
     title = env("MODEL_CHECK_TITLE", "BET 2026 Model Checks - Jitter"),
     provenance = provenance,
     regional = regional_jitter,
+    regional_quantities = regional_quantities,
     trajectory_style = trajectory_style,
     reference_label = env("JITTER_REFERENCE_LABEL", "Reference model"),
     base_label = env("JITTER_BASE_LABEL", "Attached base fit"),
@@ -77,6 +88,7 @@ if (identical(check, "jitter")) {
   message("Jitter trajectory style: ", trajectory_style)
   if (regional_jitter) {
     message("Regional jitter values: ", nrow(result$regional_data))
+    message("Regional jitter figures: ", paste(regional_quantities, collapse = ", "))
   }
 } else if (identical(check, "retrospective")) {
   result <- mfclshiny::build_retrospective_report(

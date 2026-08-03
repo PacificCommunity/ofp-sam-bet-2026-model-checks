@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "cf786007b5261f84faac8f3d24f7084bd323119d"
-MFCLSHINY_REF = "5bef291075fdf8ae8c5e7b6fbe6759bd6c245061"
+MFCLSHINY_REF = "a8dffd78de61c99af8cf5b1f6995e861157dc96c"
 
 
 def repo_runtime_packages(mfclshiny_ref: str = MFCLSHINY_REF) -> str:
@@ -39,8 +39,8 @@ CHECKS = {
         "title": "Jitter",
         "description": (
             "Report-only mfclshiny jitter diagnostics from existing model outputs, "
-            "including annual stock-status trajectories and official WCPFC "
-            "recent-period quantities."
+            "including annual stock-status trajectories, official WCPFC "
+            "recent-period quantities, and regional depletion diagnostics."
         ),
         "dependency_word": "jitter",
         "dependency_pattern": re.compile(r"(^|[^a-z])jitter([^a-z]|$)", re.I),
@@ -430,6 +430,9 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "JITTER_REL_DIFF_THRESHOLD": str(args.rel_diff_threshold),
             "JITTER_REPORT_DPI": str(args.dpi),
             "JITTER_REGIONAL_DIAGNOSTICS": "true" if args.regional_jitter else "false",
+            "JITTER_REGIONAL_QUANTITIES": ",".join(
+                args.regional_quantity or ["depletion"]
+            ),
             "JITTER_TRAJECTORY_STYLE": args.trajectory_style,
             "JITTER_REFERENCE_LABEL": args.reference_label,
             "JITTER_BASE_LABEL": args.base_label,
@@ -502,7 +505,14 @@ def main() -> int:
     parser.add_argument(
         "--regional-jitter",
         action="store_true",
-        help="Build the additional regional depletion and recruitment diagnostics.",
+        help="Build additional regional diagnostics from recoverable jitter outputs.",
+    )
+    parser.add_argument(
+        "--regional-quantity",
+        action="append",
+        choices=("depletion", "recruitment"),
+        default=[],
+        help="Regional figure to include; repeat to include both (default: depletion).",
     )
     parser.add_argument(
         "--trajectory-style",
