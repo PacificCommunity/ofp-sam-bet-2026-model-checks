@@ -37,6 +37,11 @@ COLLECTOR_WORDS = re.compile(r"merge|attach|collector|aggregate|combined", re.I)
 CHECKS = {
     "jitter": {
         "title": "Jitter",
+        "description": (
+            "Report-only mfclshiny jitter diagnostics from existing model outputs, "
+            "including annual stock-status trajectories and official WCPFC "
+            "recent-period quantities."
+        ),
         "dependency_word": "jitter",
         "dependency_pattern": re.compile(r"(^|[^a-z])jitter([^a-z]|$)", re.I),
         "output_dir": "jitter",
@@ -129,7 +134,7 @@ def metadata_input_refs(job: dict) -> list[str]:
     )
 
 
-def resolve_regional_jitter_units(api: KflowAPI, check_jobs: list[dict]) -> list[dict]:
+def resolve_jitter_artifact_units(api: KflowAPI, check_jobs: list[dict]) -> list[dict]:
     """Find completed leaf jitter jobs carrying the recoverable seed payloads."""
     queue: deque[str] = deque()
     for check_job in check_jobs:
@@ -367,13 +372,13 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             record[f"{prefix}_job"] = record["check_job"]
             record[f"{prefix}_id"] = check_id
             provenance.append(record)
-        if args.check == "jitter" and args.regional_jitter:
-            unit_jobs = resolve_regional_jitter_units(api, check_jobs)
-            if not unit_jobs:
+        if args.check == "jitter":
+            unit_jobs = resolve_jitter_artifact_units(api, check_jobs)
+            if not unit_jobs and args.regional_jitter:
                 raise RuntimeError(
                     f"Model job #{model_record['model_job']} has no completed recoverable jitter unit jobs."
                 )
-            model_record["regional_jitter_unit_jobs"] = [job_number(job) for job in unit_jobs]
+            model_record["jitter_artifact_jobs"] = [job_number(job) for job in unit_jobs]
             for unit_job in unit_jobs:
                 unit_id = str(unit_job.get("id") or "")
                 unit_number = str(job_number(unit_job) or "")
@@ -388,7 +393,8 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
                         "check_id": unit_id,
                         "jitter_job": unit_number,
                         "jitter_id": unit_id,
-                        "regional_recovery_source": True,
+                        "artifact_recovery_source": True,
+                        "regional_recovery_source": args.regional_jitter,
                     }
                 )
 
@@ -462,7 +468,10 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
                 f"{report_title} | Model jobs #"
                 + ", #".join(record["model_job"] for record in models)
             ),
-            "job_description": f"Report-ready mfclshiny {config['title']} figures and Word/LaTeX tables.",
+            "job_description": config.get(
+                "description",
+                f"Report-ready mfclshiny {config['title']} figures and Word/LaTeX tables.",
+            ),
         },
     }
     if args.check != "jitter":
@@ -493,7 +502,7 @@ def main() -> int:
     parser.add_argument(
         "--regional-jitter",
         action="store_true",
-        help="Include recoverable leaf jitter jobs and build regional depletion/recruitment diagnostics.",
+        help="Build the additional regional depletion and recruitment diagnostics.",
     )
     parser.add_argument(
         "--trajectory-style",
@@ -553,7 +562,8 @@ def main() -> int:
         {
             "name": f"BET 2026 Diagnostic Checks - {CHECKS[args.check]['title']}",
             "description": (
-                "Portable, report-ready BET 2026 model checks built with "
+                CHECKS[args.check].get("description")
+                or "Portable, report-ready BET 2026 model checks built with "
                 f"mfclshiny for {CHECKS[args.check]['title']} reports."
             ),
             "repo": args.repo,
