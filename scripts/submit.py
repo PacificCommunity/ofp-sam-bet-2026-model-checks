@@ -21,7 +21,7 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "cf786007b5261f84faac8f3d24f7084bd323119d"
-MFCLSHINY_REF = "51766fa85eb8668e2970badf8f8e7c84fccf7e3a"
+MFCLSHINY_REF = "5bef291075fdf8ae8c5e7b6fbe6759bd6c245061"
 
 
 def repo_runtime_packages(mfclshiny_ref: str = MFCLSHINY_REF) -> str:
