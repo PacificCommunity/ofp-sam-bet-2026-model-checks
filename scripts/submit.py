@@ -20,13 +20,18 @@ TUNA_FLOW_IMAGE = (
     "sha256:c87f1f6d9d4f62dc447844b58afe35f96af175bf933cb6cffbbbe39a59172360"
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
-MFCLKIT_REF = "34c56de25afecdd13e9f8e94f2e421e37d9c2f9b"
-MFCLSHINY_REF = "48359df120c92b5fb65ebee3a5baf529d76ea6bf"
-REPO_RUNTIME_PACKAGES = (
-    f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
-    f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
-    f"mfclshiny=PacificCommunity/mfclshiny@{MFCLSHINY_REF}"
-)
+MFCLKIT_REF = "cf786007b5261f84faac8f3d24f7084bd323119d"
+MFCLSHINY_REF = "51766fa85eb8668e2970badf8f8e7c84fccf7e3a"
+
+
+def repo_runtime_packages(mfclshiny_ref: str = MFCLSHINY_REF) -> str:
+    return (
+        f"FLR4MFCL=PacificCommunity/ofp-sam-flr4mfcl@{FLR4MFCL_REF},"
+        f"mfclkit=PacificCommunity/ofp-sam-mfclkit@{MFCLKIT_REF},"
+        f"mfclshiny=PacificCommunity/mfclshiny@{mfclshiny_ref}"
+    )
+
+
 COMPLETED = {"completed", "success"}
 COLLECTOR_WORDS = re.compile(r"merge|attach|collector|aggregate|combined", re.I)
 CHECKS = {
@@ -429,7 +434,9 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             "MFCLKIT_GITHUB_REF": MFCLKIT_REF,
             "MFCLSHINY_GITHUB_REF": args.mfclshiny_ref,
             "KFLOW_RUNTIME_PACKAGES": "none",
-            "KFLOW_REPO_RUNTIME_PACKAGES": REPO_RUNTIME_PACKAGES,
+            "KFLOW_REPO_RUNTIME_PACKAGES": repo_runtime_packages(
+                args.mfclshiny_ref
+            ),
             "KFLOW_REPO_RUNTIME_UPDATE": "always",
             "KFLOW_RUNTIME_UPDATE": "always",
             "TUNA_FLOW_RUNTIME_UPDATE": "always",

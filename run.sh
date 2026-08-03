@@ -81,11 +81,11 @@ install_runtime_repo \
 install_runtime_repo \
   mfclkit \
   PacificCommunity/ofp-sam-mfclkit \
-  "${MFCLKIT_GITHUB_REF:-34c56de25afecdd13e9f8e94f2e421e37d9c2f9b}"
+  "${MFCLKIT_GITHUB_REF:-cf786007b5261f84faac8f3d24f7084bd323119d}"
 install_runtime_repo \
   mfclshiny \
   PacificCommunity/mfclshiny \
-  "${MFCLSHINY_GITHUB_REF:-48359df120c92b5fb65ebee3a5baf529d76ea6bf}"
+  "${MFCLSHINY_GITHUB_REF:-51766fa85eb8668e2970badf8f8e7c84fccf7e3a}"
 
 Rscript - <<'RS'
 lib <- Sys.getenv("R_LIBS_USER")
