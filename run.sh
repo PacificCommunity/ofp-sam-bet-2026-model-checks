@@ -13,7 +13,7 @@ if [[ -z "${MODEL_CHECK_OUTPUT_DIR}" ]]; then
   esac
 fi
 R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
-REPORT_RUNTIME_CACHE_KEY="bet2026-report-a033dac"
+REPORT_RUNTIME_CACHE_KEY="bet2026-report-4195755"
 
 mkdir -p "${INPUT_DIR}" "${MODEL_CHECK_OUTPUT_DIR}" "${R_LIBRARY}"
 export R_LIBS_USER="${R_LIBRARY}"
