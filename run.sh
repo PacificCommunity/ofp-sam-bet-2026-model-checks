@@ -13,6 +13,7 @@ if [[ -z "${MODEL_CHECK_OUTPUT_DIR}" ]]; then
   esac
 fi
 R_LIBRARY="${R_LIBS_USER:-${ROOT}/.R-library}"
+REPORT_RUNTIME_CACHE_KEY="bet2026-report-a033dac"
 
 mkdir -p "${INPUT_DIR}" "${MODEL_CHECK_OUTPUT_DIR}" "${R_LIBRARY}"
 export R_LIBS_USER="${R_LIBRARY}"
@@ -59,6 +60,15 @@ install_runtime_repo() {
   local repo="$2"
   local ref="$3"
   local source_dir="${ROOT}/.runtime-sources/${package}"
+
+  # NC240124 keeps this immutable, pre-built report image locally.  When the
+  # requested lock key matches, use its installed package rather than cloning
+  # and compiling the same sources for every report-only Condor job.
+  if [[ "${KFLOW_REPORT_RUNTIME_CACHE_KEY:-}" == "${REPORT_RUNTIME_CACHE_KEY}" ]] && \
+     Rscript -e "quit(status = if (requireNamespace('${package}', quietly = TRUE)) 0L else 1L)"; then
+    echo "[model-checks] reusing local report runtime: ${package}@${ref}"
+    return 0
+  fi
 
   rm -rf "${source_dir}"
   mkdir -p "$(dirname "${source_dir}")"

@@ -21,7 +21,9 @@ TUNA_FLOW_IMAGE = (
 )
 FLR4MFCL_REF = "3faaf84a4867175bfea50d89e4d518c085e84739"
 MFCLKIT_REF = "cf786007b5261f84faac8f3d24f7084bd323119d"
-MFCLSHINY_REF = "a8dffd78de61c99af8cf5b1f6995e861157dc96c"
+MFCLSHINY_REF = "a033dac417370c44650a126ecf8b10a41a2b94b2"
+LOCAL_REPORT_RUNTIME_KEY = "bet2026-report-a033dac"
+LOCAL_REPORT_IMAGE = "kflow-bet-2026-report-runtime:a033dac"
 
 
 def repo_runtime_packages(mfclshiny_ref: str = MFCLSHINY_REF) -> str:
@@ -407,10 +409,14 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
     )
     report_label = f"{config['title']} | {model_labels}"
     report_title = args.title or f"BET 2026 Diagnostic Checks - {config['title']}"
+    use_local_report_runtime = (
+        args.remote_host.startswith("kflow-local-")
+        and args.mfclshiny_ref == MFCLSHINY_REF
+    )
     payload = {
         "repo": args.repo,
         "branch": args.branch,
-        "docker_image": TUNA_FLOW_IMAGE,
+        "docker_image": LOCAL_REPORT_IMAGE if use_local_report_runtime else TUNA_FLOW_IMAGE,
         "batch_name": job_name,
         "remote_user": args.remote_user,
         "remote_host": args.remote_host,
@@ -477,6 +483,8 @@ def build_submission(api: KflowAPI, model_refs: list[str], args: argparse.Namesp
             ),
         },
     }
+    if use_local_report_runtime:
+        payload["env"]["KFLOW_REPORT_RUNTIME_CACHE_KEY"] = LOCAL_REPORT_RUNTIME_KEY
     if args.check != "jitter":
         for name in ("JITTER_GRAD_REFERENCE", "JITTER_REL_DIFF_THRESHOLD", "JITTER_REPORT_DPI"):
             payload["env"].pop(name, None)
