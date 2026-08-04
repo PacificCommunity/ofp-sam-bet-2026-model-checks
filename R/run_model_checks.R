@@ -71,7 +71,7 @@ if (identical(check, "jitter")) {
     regional = regional_jitter,
     regional_quantities = regional_quantities,
     trajectory_style = trajectory_style,
-    reference_label = env("JITTER_REFERENCE_LABEL", "Reference model"),
+    reference_label = env("JITTER_REFERENCE_LABEL", "Diagnostic model (unjittered)"),
     base_label = env("JITTER_BASE_LABEL", "Attached base fit"),
     reference_colour = env("JITTER_REFERENCE_COLOUR", "#C62828"),
     base_colour = env("JITTER_BASE_COLOUR", "#111827"),
@@ -82,6 +82,15 @@ if (identical(check, "jitter")) {
     dpi = dpi,
     render_html = TRUE
   )
+  # FLR4MFCL may leave a package help page beside generated figures; it is not
+  # part of the report-ready jitter deliverable.
+  stray_flr_pages <- list.files(
+    output_dir,
+    pattern = "^FLR4MFCL[.]html$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+  if (length(stray_flr_pages)) unlink(stray_flr_pages, force = TRUE)
   message("Jitter report: ", result$html)
   message("Models: ", length(unique(result$data$scenario)))
   message("Jitter seeds: ", nrow(result$data))
