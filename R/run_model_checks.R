@@ -59,7 +59,7 @@ if (identical(check, "jitter")) {
   )[[1L]])
   regional_quantities <- intersect(
     regional_quantities[nzchar(regional_quantities)],
-    c("depletion", "recruitment")
+    c("depletion", "recruitment", "recruitment_deviation")
   )
   if (!length(regional_quantities)) regional_quantities <- "depletion"
   trajectory_style <- env("JITTER_TRAJECTORY_STYLE", "distribution")

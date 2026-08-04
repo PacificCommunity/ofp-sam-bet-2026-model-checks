@@ -510,7 +510,7 @@ def main() -> int:
     parser.add_argument(
         "--regional-quantity",
         action="append",
-        choices=("depletion", "recruitment"),
+        choices=("depletion", "recruitment", "recruitment_deviation"),
         default=[],
         help="Regional figure to include; repeat to include both (default: depletion).",
     )
@@ -520,7 +520,7 @@ def main() -> int:
         default="distribution",
         help="Show pointwise distribution bands or all included jitter trajectories.",
     )
-    parser.add_argument("--reference-label", default="Reference model")
+    parser.add_argument("--reference-label", default="Diagnostic model (unjittered)")
     parser.add_argument("--base-label", default="Attached base fit")
     parser.add_argument("--reference-colour", default="#C62828")
     parser.add_argument("--base-colour", default="#111827")
